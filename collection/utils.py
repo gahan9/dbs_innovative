@@ -9,18 +9,24 @@ def add_data():
         with open(FILE_PATH, 'r', encoding="utf-8") as f:
             content = f.read()
         data = content.split("\n")
-        for val in data[1:10]:
+        for val in data[1000:]:
             row = [i.replace("\\N", "").strip() if i.replace("\\N", "").strip() else None for i in val.split("\t")]
+            # print(row)
+            # try:
+            #     ordering = int(val[1])
+            # except ValueError:
+            #     ordering = 1000
             row_dict = {
-                "title_id": val[0],
-                "ordering": val[1],
-                "title": val[2],
-                "region": val[3],
-                "language": val[4],
-                "types": val[5],
-                "attributes": val[6],
-                "is_original_title": val[7],
+                "title_id": row[0],
+                "ordering": int(row[1]),
+                "title": row[2],
+                "region": row[3],
+                "language": row[4],
+                "types": row[5],
+                "attributes": row[6],
+                "is_original_title": bool(row[7]),
             }
+            # print(row_dict)
             Title.objects.get_or_create(**row_dict)
     else:
         print("Path not exist")
