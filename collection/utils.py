@@ -11,14 +11,15 @@ from moviedb.settings import BASE_DIR
 DATA_LEN = 3671031
 
 
-def generate_data():
+def add_data_to_db(batch_size=8192):
     FILE_PATH = os.path.join(BASE_DIR, "dump", "data.tsv")
     if os.path.exists(FILE_PATH):
         with open(FILE_PATH, 'r', encoding="utf-8") as f:
             content = f.read()
-        data = content.split("\n")
         DATA_RANGE_SKIP = Title.objects.count()
-        for val in data[DATA_RANGE_SKIP:]:
+        data = content.split("\n")[DATA_RANGE_SKIP:]
+        for idx, val in enumerate(data):
+            objects = []
             row = [i.replace("\\N", "").strip() if i.replace("\\N", "").strip() else None for i in val.split("\t")]
             # print(row)
             # try:
@@ -35,24 +36,26 @@ def generate_data():
                 "attributes": row[6],
                 "is_original_title": bool(row[7]),
             }
-            return row_dict
+            objects += [Title(**row_dict)]
+            # return row_dict
             # print(row_dict)
-            # try:
-            #     Title.objects.get_or_create(**row_dict)
-            # except DataError:
-            #     print("Error for below entry:\n{}".format(row_dict))
+            try:
+                if objects:
+                    Title.objects.bulk_create(objects, batch_size)
+            except DataError:
+                print("Error for below entry:\n{}".format(row_dict))
     else:
         print("Path not exist")
 
 
-def add_data_to_db(batch_size=500):
-    DATA_RANGE = DATA_LEN - Title.objects.count()
-    objects = (Title(generate_data()) for i in range(min(1000, DATA_RANGE)))
-    while True:
-        batch = list(islice(objects, batch_size))
-        if not batch:
-            break
-        Title.objects.bulk_create(batch, batch_size)
+# def add_data_to_db(batch_size=500):
+#     DATA_RANGE = DATA_LEN - Title.objects.count()
+#     objects = (Title(**generate_data()) for i in range(batch_size))
+#     while True:
+#         batch = list(islice(objects, batch_size))
+#         if not batch:
+#             break
+#         Title.objects.bulk_create(batch, batch_size)
 
 
 if __name__ == "__main__":
