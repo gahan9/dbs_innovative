@@ -1,0 +1,148 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Journal Article
+% Database System
+% Assignment 1: Feature Matrix
+%
+% Gahan M. Saraiya
+% 18MCEC10
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%----------------------------------------------------------------------------------------
+%       PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+\documentclass[paper=letter, fontsize=12pt]{article}
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{lipsum} % Package to generate dummy text throughout this template
+\usepackage{blindtext}
+\usepackage{graphicx} 
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[sc]{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{bbding}  % to use custom itemize font
+\linespread{1.05} % Line spacing - Palatino needs more space between lines
+\usepackage{microtype} % Slightly tweak font spacing for aesthetics
+\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
+\usepackage{multicol} % Used for the two-column layout of the document
+%\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage{booktabs} % Horizontal rules in tables
+\usepackage{float} % Required for tables and figures in the multi-column environment - they need to be placed in specific locations with the [H] (e.g. \begin{table}[H])
+\usepackage{hyperref} % For hyperlinks in the PDF
+\usepackage{lettrine} % The lettrine is the first enlarged letter at the beginning of the text
+\usepackage{paralist} % Used for the compactitem environment which makes bullet points with less space between them
+\usepackage{abstract} % Allows abstract customization
+\renewcommand{\abstractnamefont}{\normalfont\bfseries} % Set the "Abstract" text to bold
+\renewcommand{\abstracttextfont}{\normalfont\small\itshape} % Set the abstract itself to small italic text
+\usepackage{titlesec} % Allows customization of titles
+
+\renewcommand\thesection{\Roman{section}} % Roman numerals for the sections
+\renewcommand\thesubsection{\Roman{subsection}} % Roman numerals for subsections
+
+\titleformat{\section}[block]{\large\scshape\centering}{\thesection.}{1em}{} % Change the look of the section titles
+\titleformat{\subsection}[block]{\large}{\thesubsection.}{1em}{} % Change the look of the section titles
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+\usepackage{fancyhdr} % Headers and footers
+\pagestyle{fancy} % All pages have headers and footers
+\fancyhead{} % Blank out the default header
+\fancyfoot{} % Blank out the default footer
+
+\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ November 2018} % Custom header text
+
+\fancyfoot[RO,LE]{\thepage} % Custom footer text
+%----------------------------------------------------------------------------------------
+%       TITLE SECTION
+%----------------------------------------------------------------------------------------
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Innovative Assignment 1}} % Article title
+\author{
+\large
+{\textsc{Gahan Saraiya (18MCEC10), Rushi Trivedi (18MCEC08), Raj Kothari (18MCEC07)}}\\[2mm]
+%\thanks{A thank you or further information}\\ % Your name
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec10@nirmauni.ac.in}, % Your email address
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec08@nirmauni.ac.in}, % Your email address
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec07@nirmauni.ac.in}\\[2mm] % Your email address
+}
+\date{}
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	urlcolor=cyan,
+	pdfauthor={Gahan Saraiya},
+	pdfcreator={Gahan Saraiya},
+	pdfproducer={Gahan Saraiya},
+}
+
+\usepackage{makecell}
+
+%----------------------------------------------------------------------------------------
+\begin{document}
+\maketitle % Insert title
+\thispagestyle{fancy} % All pages have headers and footers
+
+\newcommand*\tick{\item[\Checkmark]}
+\newcommand*\good{\CheckmarkBold}
+\newcommand*\arrow{\item[$\Rightarrow$]}
+\newcommand*\fail{\item[\XSolidBrush]}
+\newcommand*\bad{\XSolidBrush}
+
+\section{Introduction}
+Aim of this assignment is to produce feature matrix for various multidimensional indexes.
+\section{Feature Matrix}
+The merits and demerits of below listed indexes are compared:
+\begin{itemize}
+	\item Hash Based
+		\begin{itemize}
+			\item Grid File
+			\item Partitioned Hash
+		\end{itemize}
+	\item Tree Based
+		\begin{itemize}
+			\item Multi-key
+			\item kd-Tree
+			\item Quad Tree
+			\item R Tree
+		\end{itemize}
+\end{itemize}
+
+%\setlength{\tabcolsep}{10pt} % Default value: 6pt
+\renewcommand{\arraystretch}{2} % Default value: 1
+\begin{table}[!ht]
+	\caption{Feature Matrix for Multidimensional Indexed}
+	\newcolumntype{P}{>{\centering\arraybackslash}m{2cm}}
+	\newcolumntype{R}{>{\arraybackslash}m{2cm}}
+	\begin{tabular}{ R | P P | P P P P }
+	
+	\hline
+	Query & \multicolumn{2}{c| }{\textbf{Hash Based}}& \multicolumn{4}{c}{\textbf{Tree Based}}
+	\\ \cline{2-7}
+	Type & Grid & Partitioned Hash & MultiKey & kd-Tree & Quad Tree & R Tree 
+	\\ \hline
+	Exact Match & \good & \good & \good & \good & \good & Reasonable
+	\\ \hline 
+	Partial Match & \good & \good & works only for first key & \good & \good & \good
+	\\ \hline 
+	Range & \good & \bad & \bad & \good & \good & \good
+	\\ \hline 
+	Nearest Neighbour & \good & \bad & \bad & Reasonable & \good & Reasonable
+	\\ \hline 
+	Where am I & N/A & N/A & N/A & N/A & N/A & \good 
+	\\ \hline 
+	\hline
+	Balanced Tree & N/A & N/A & \good & \bad & \bad & \good
+	\\ \hline 
+	\# of empty nodes or buckets & High (if large data file) & -- & -- & -- & High [Sol: keep only Not-NULL pointer only] & N/A
+	\\ \hline 
+	Splitting & Easy & Hard & N/A & N/A & N/A & N/A
+	\\ \hline 
+	Splitting Point & Distribute Data & N/A & N/A & any point that distribute data & centre point always & N/A
+	\\ \hline
+	\end{tabular}
+\end{table}
+
+
+%----------------------------------------------------------------------------------------
+%\end{multicols}
+\end{document}
