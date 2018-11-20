@@ -10,4 +10,4 @@ class Title(models.Model):
     types = models.CharField(max_length=32, null=True, blank=True)
     attributes = models.CharField(max_length=256, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    is_original_title = models.BooleanField(null=True, blank=True)
+    is_original_title = models.BooleanField(default=False)

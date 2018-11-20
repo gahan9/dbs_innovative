@@ -1,0 +1,302 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Journal Article
+% Database System
+% Assignment 2: Impact of queries
+%
+% Gahan M. Saraiya
+% 18MCEC10
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%----------------------------------------------------------------------------------------
+%       PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+\documentclass[paper=letter, fontsize=12pt]{article}
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{lipsum} % Package to generate dummy text throughout this template
+\usepackage{blindtext}
+\usepackage{graphicx} 
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[sc]{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{bbding}  % to use custom itemize font
+\linespread{1.05} % Line spacing - Palatino needs more space between lines
+\usepackage{microtype} % Slightly tweak font spacing for aesthetics
+\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
+\usepackage{multicol} % Used for the two-column layout of the document
+%\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage{booktabs} % Horizontal rules in tables
+\usepackage{float} % Required for tables and figures in the multi-column environment - they need to be placed in specific locations with the [H] (e.g. \begin{table}[H])
+\usepackage{hyperref} % For hyperlinks in the PDF
+\usepackage{lettrine} % The lettrine is the first enlarged letter at the beginning of the text
+\usepackage{paralist} % Used for the compactitem environment which makes bullet points with less space between them
+\usepackage{abstract} % Allows abstract customization
+\renewcommand{\abstractnamefont}{\normalfont\bfseries} % Set the "Abstract" text to bold
+\renewcommand{\abstracttextfont}{\normalfont\small\itshape} % Set the abstract itself to small italic text
+\usepackage{titlesec} % Allows customization of titles
+
+\renewcommand\thesection{\Roman{section}} % Roman numerals for the sections
+\renewcommand\thesubsection{\Roman{subsection}} % Roman numerals for subsections
+
+\date{}
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	urlcolor=cyan,
+	pdfauthor={Gahan Saraiya},
+	pdfcreator={Gahan Saraiya},
+	pdfproducer={Gahan Saraiya},
+}
+
+\usepackage{makecell}
+\usepackage{longtable}
+
+\newcommand*\tick{\item[\Checkmark]}
+\newcommand*\good{\CheckmarkBold}
+\newcommand*\arrow{\item[$\Rightarrow$]}
+\newcommand*\fail{\item[\XSolidBrush]}
+\newcommand*\bad{\XSolidBrush}
+\usepackage{minted} % for highlighting code sytax
+\usepackage{xcolor} % for highlighting code sytax
+\definecolor{LightGray}{gray}{0.9}
+
+\setminted[text]{
+	frame=lines, 
+	breaklines,
+	baselinestretch=1.2,
+	bgcolor=LightGray,
+	%	fontsize=\small
+}
+\setminted[sql]{
+	frame=lines, 
+	breaklines,
+	baselinestretch=1.2,
+	bgcolor=LightGray,
+	%	fontsize=\small
+}
+
+\setminted[python]{
+	frame=lines, 
+	breaklines, 
+	linenos,
+	baselinestretch=1.2,
+	%	bgcolor=LightGray,
+	%	fontsize=\small
+}
+\titleformat{\section}[block]{\large\scshape\centering}{\thesection.}{1em}{} % Change the look of the section titles
+\titleformat{\subsection}[block]{\large}{\thesubsection.}{1em}{} % Change the look of the section titles
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+\usepackage{fancyhdr} % Headers and footers
+\pagestyle{fancy} % All pages have headers and footers
+\fancyhead{} % Blank out the default header
+\fancyfoot{} % Blank out the default footer
+
+\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ November 2018} % Custom header text
+
+\fancyfoot[RO,LE]{\thepage} % Custom footer text
+%----------------------------------------------------------------------------------------
+%       TITLE SECTION
+%----------------------------------------------------------------------------------------
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Innovative Assignment 2}} % Article title
+\author{
+\large
+{\textsc{Gahan Saraiya (18MCEC10), Rushi Trivedi (18MCEC08), Raj Kothari (18MCEC07)}}\\[2mm]
+%\thanks{A thank you or further information}\\ % Your name
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec10@nirmauni.ac.in}, % Your email address
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec08@nirmauni.ac.in}, % Your email address
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec07@nirmauni.ac.in}\\[2mm] % Your email address
+}
+%----------------------------------------------------------------------------------------
+\begin{document}
+\maketitle % Insert title
+\thispagestyle{fancy} % All pages have headers and footers
+
+\section{Introduction}\label{sec:introduction}
+Aim of this assignment is to analyze impact of various indexes on any modern database (SQL or NoSQL).
+
+Steps to be followed:
+\begin{itemize}
+	\item Select Database
+	\item Analyze performance and cost impact of indexes for various type of query
+\end{itemize}
+
+\section{Implementation}
+\label{sec:implementation}
+\subsection{Considerations}
+
+%\begin{table}[H]
+%	\setlength{\parindent}{-5em} 
+	\renewcommand{\arraystretch}{2} % Default value: 1
+	\begin{longtable}{c | c | p{9cm} }
+		Variable & Value & Detail
+		\\ \hline
+		Database & PostgreSQL & 
+		\\ \hline
+		Analyze scale factor & $0.1$ & Number of tuple inserts, updates, or deletes prior to analyze as a fraction of reltuples.
+		\\ \hline
+		Analyze Threshold & $50$ & Minimum number of tuple inserts, updates, or deletes prior to analyze.
+		\\ \hline
+		Block Size & $8192$ & Shows the size of a disk block.
+		\\ \hline
+		CPU Index Tuple cost & $0.005$ & Sets the planner's estimate of the cost of processing each index entry during an index scan.
+		\\ \hline
+		CPU operator cost & $0.0025$ & Sets the planner's estimate of the cost of processing each operator or function call.
+		\\ \hline
+		CPU tuple cost & $0.01$ & Sets the planner's estimate of the cost of processing each tuple (row).
+		\\ \hline
+		cursor tuple fraction & $0.1$ & Sets the planner's estimate of the fraction of a cursor's rows that will be retrieved.
+		\\ \hline
+		deadlock timeout & $1s$ & Sets the time to wait on a lock before checking for deadlock.
+		\\ \hline
+		commit delay & $0\mu s$ & Sets the delay in microseconds between transaction commit and flushing WAL\footnote{WAL - Write Ahead Logging} to disk.
+		\\ \hline
+		commit sibling & $5\mu s$ & Sets the minimum concurrent open transactions before performing commit\_delay.
+		\\ \hline
+		Effective cache size & $4GB$ & Sets the planner's assumption about the size of the disk cache.
+		\\ \hline
+		Effective IO concurrency & $1$ & Number of simultaneous requests that can be handled efficiently by the disk subsystem.
+		\\ \hline
+		Log Rotation Age & $1d$ & Automatic log file rotation will occur after N minutes.
+		\\ \hline
+		Log Rotation Size & $10MB$ & Automatic log file rotation will occur after N kilobytes.
+		\\ \hline
+		Maintenance Work Memory & $64MB$ & Sets the maximum memory to be used for maintenance operations.
+		\\ \hline
+		Max Connections & $100$ & Sets the maximum number of concurrent connections.
+		\\ \hline
+		Max files per process & $1000$ & Sets the maximum number of simultaneously open files for each server process.
+		\\ \hline
+		Max function arguments & $100$ & Shows the maximum number of function arguments.
+		\\ \hline
+		Max Index Keys & $32$ & Shows the maximum number of index keys.
+		\\ \hline
+		Max Stack depth & $2MB$ & Sets the maximum stack depth, in kilobytes.
+		\\ \hline
+		Max WAL Size & $1GB$ & Sets the WAL size that triggers a checkpoint.
+		\\ \hline
+		Min WAL Size & $80MB$ & Sets the minimum size to shrink the WAL to.
+		\\ \hline
+		Segment Size & $1GB$ & Shows the number of pages per disk file.
+		\\ \hline
+		Work Memory & $4MB$ & Sets the maximum memory to be used for query workspaces.
+		\\ \hline
+		
+		\caption{Consideration and variables}
+	\end{longtable}
+%\end{table}
+\subsection{Schema}
+\inputminted{sql}{schema_structure.sql}
+
+\subsection{Status}
+\paragraph{Total Entries} 2096169
+
+\section{Query Impact}
+
+\subsection{Exact Match/ Point Query}
+\begin{minted}{sql}
+EXPLAIN ANALYZE select * from collection_title where title like '%Batman%' and title_id='tt0060153' and region='US';
+\end{minted}
+
+\begin{longtable}{p{4cm} | p{12cm}}
+	\caption{Query Plan}
+	\\
+	Index Scan using collection\_title\_pkey on collection\_title & (cost=0.43..8.45 rows=1 width=107) (actual time=0.035..0.036 rows=1 loops=1)
+	\\ \hline
+	Index Cond & $(id = 334596)$
+	\\ \hline
+	Planning time & 0.127ms
+	\\ \hline
+	Execution time & 0.078ms
+\end{longtable}
+
+\subsection{Partial Match}
+\begin{minted}{sql}
+explain analyze select * from collection_title where ordering=1;
+\end{minted}
+
+\begin{longtable}{p{4cm} | p{12cm}}
+	\caption{Query Plan}
+	\\
+	Seq Scan on collection\_title & (cost=0.00..48832.51 rows=859800 width=107) (actual time=0.020..305.430 rows=910215 loops=1)
+	\\ \hline
+	Filter & $(ordering = 1)$
+	\\ \hline
+	Rows Removed by Filter & 1185954
+	\\ \hline
+	Total Rows & 2096169
+	\\ \hline
+	Planning time & 0.091ms
+	\\ \hline
+	Execution time & 334.993ms
+\end{longtable}
+
+\begin{minted}{sql}
+explain analyze select id,title_id, title from collection_title where title like '%avenger%';
+\end{minted}
+
+\begin{longtable}{p{4cm} | p{12cm}}
+	\caption{Query Plan}
+	\\
+	Seq Scan on collection\_title & (cost=0.00..48832.51 rows=207 width=34) (actual time=0.621..490.246 rows=41 loops=1)
+	\\ \hline
+	Filter & $((title)::text ~~ '\%avenger\%'::text)$
+	\\ \hline
+	Rows Removed by Filter & 1185954
+	\\ \hline
+	Total Rows & 2096128
+	\\ \hline
+	Planning time & 0.120 ms
+	\\ \hline
+	Execution time & 490.282 ms
+\end{longtable}
+
+\subsection{Range Query}
+\begin{minted}{sql}
+explain analyze select * from collection_title where id>3566 and id <25996;
+\end{minted}
+
+\begin{longtable}{p{4cm} | p{12cm}}
+	\caption{Query Plan}
+	\\
+	Seq Scan on collection\_title & (cost=0.00..48832.51 rows=859800 width=107) (actual time=0.020..305.430 rows=910215 loops=1)
+	\\ \hline
+	Filter & $(ordering = 1)$
+	\\ \hline
+	Rows Removed by Filter & 1185954
+	\\ \hline
+	Total Rows & 2096169
+	\\ \hline
+	Planning time & 0.091ms
+	\\ \hline
+	Execution time & 334.993ms
+\end{longtable}
+
+
+\begin{minted}{sql}
+explain analyze select * from collection_title where id>3566 and id <25996;
+\end{minted}
+
+\begin{longtable}{p{4cm} | p{12cm}}
+	\caption{Query Plan}
+	\\
+	Index Scan using collection\_title\_pkey on collection\_title & (cost=0.43..1089.81 rows=25864 width=107) (actual time=0.168..44.540 rows=22429 loops=1)
+	\\ \hline
+	Index Cond & $((id > 3566) AND (id < 25996))$
+	\\ \hline
+	Planning time & 0.0140 ms
+	\\ \hline
+	Execution time & 45.695 ms
+\end{longtable}
+
+
+
+
+
+
+%----------------------------------------------------------------------------------------
+%\end{multicols}
+\end{document}
