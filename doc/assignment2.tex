@@ -295,11 +295,225 @@ explain analyze select * from collection_title where id>3566 and id <25996;
 	Execution time & 45.695 ms
 \end{longtable}
 
+\section{execution plan nodes}
+\subsection{Nodes: stream-like}
+	Some nodes are more or less stream-like. They don’t accumulate data from underlying nodes and produce nodes one by one, so they have no chance to allocate too much memory.
+	\subsection{Nodes: stream-like}
+	Some nodes are more or less stream-like. They don’t accumulate data from underlying nodes and produce nodes one by one, so they have no chance to allocate too much memory.
+	\subsubsection{Examples of such nodes include}
+	\begin{itemize}
+		\item Sequential scan, Index Scan
+		\item Nested Loop and Merge Join
+		\item Append and Merge Append
+		\item Unique (of a sorted input)
+	\end{itemize}
+	Even a single row can be quite large.
+	Maximal size for individual postgres value is around 1GB, so this query requires 5GB:
+	\begin{minted}{sql}
+WITH cte_1g as (select repeat('a', 1024*1024*1024 - 100) as a1g)
+SELECT *
+FROM cte_1g a, cte_1g b, cte_1g c, cte_1g d, cte_1g e;
+	\end{minted}
+
+\subsection{Nodes: controlled}
+Some of the other nodes actively use RAM but control the amount used.
+They have a fall-back behavior to switch to if they realize they cannot fit $work\_mem$.
+	\begin{itemize}
+		\item Sort node switches from quicksort to sort-on-disk
+		\item CTE and materialize nodes use temporary files if needed
+		\item Group Aggregation with DISTINCT keyword can use temporary files
+		\item Exact Bitmap Scan falls back to Lossy Bitmap Scan
+		\item Hash Join switches to batchwise processing if it encounters more data than expected
+	\end{itemize}
 
 
+\subsection{Nodes: unsafe}
+They are Hash Agg, hashed SubPlan and (rarely) Hash Join can use unlimited amount of RAM.
+Optimizer normally avoids them when it estimates them to process huge sets, but it can easily be wrong.
+	\begin{itemize}
+		\item Sort node switches from quicksort to sort-on-disk
+		\item CTE and materialize nodes use temporary files if needed
+		\item Group Aggregation with DISTINCT keyword can use temporary files
+		\item Exact Bitmap Scan falls back to Lossy Bitmap Scan
+		\item Hash Join switches to batchwise processing if it encounters more data than expected
+	\end{itemize}
+	make the estimates wrong...
+	\begin{minted}{sql}
+CREATE TABLE t (a int, b int);
+INSERT INTO t SELECT 0, b from generate_series(1, (10^7)::int) b;
+ANALYZE t;
+INSERT INTO t SELECT 1, b from generate_series(1, (5*10^5)::int) b;
+	\end{minted}
+	After this, autovacuum won’t update stats, as it treats the second
+	insert as small w r. t. the number of rows already present.
+	\begin{minted}{sql}
+postgres=# EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a = 1;
+QUERY PLAN
+-----------------------------------------------------------------------------------
+Seq Scan on t (cost=0.00..177712.39 rows=1 width=8) (rows=500000 loops=1)
+Filter: (a = 1)
+Rows Removed by Filter: 10000000
+Planning time: 0.059 ms
+Execution time: 769.508 ms
+	\end{minted}
+	
+	Then we run the following query
+	\begin{minted}{sql}
+postgres=# EXPLAIN (ANALYZE, TIMING OFF)
+postgres-# SELECT * FROM t WHERE b NOT IN (SELECT b FROM t WHERE a = 1);
+QUERY PLAN
+---------------------------------------------------------------------------------------------
+Seq Scan on t (cost=177712.39..355424.78 rows=5250056 width=8) (actual rows=9500000 loops=1)
+Filter: (NOT (hashed SubPlan 1))
+Rows Removed by Filter: 1000000
+SubPlan 1
+-> Seq Scan on t t_1 (cost=0.00..177712.39 rows=1 width=4) (actual rows=500000 loops=1)
+Filter: (a = 1)
+Rows Removed by Filter: 10000000
+Planning time: 0.126 ms
+Execution time: 3239.730 ms
+and get a half-million set hashed.
+	\end{minted}
+	The backend used 60MB of RAM while $ work\_mem $ was only 4MB.
 
-
-
+For a partitioned table it hashes the same condition separately for
+each partition!
+\begin{minted}{sql}
+postgres=# EXPLAIN SELECT * FROM t WHERE b NOT IN (SELECT b FROM t1 WHERE a = 1);
+QUERY PLAN
+--------------------------------------------------------------------------
+Append (cost=135449.03..1354758.02 rows=3567432 width=8)
+-> Seq Scan on t (cost=135449.03..135449.03 rows=1 width=8)
+Filter: (NOT (hashed SubPlan 1))
+SubPlan 1
+-> Seq Scan on t1 t1_1 (cost=0.00..135449.03 rows=1 width=4)
+Filter: (a = 1)
+-> Seq Scan on t2 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t3 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t4 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t5 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t6 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t7 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t8 (cost=135449.03..135487.28 rows=1130 width=8)
+Filter: (NOT (hashed SubPlan 1))
+-> Seq Scan on t1 (cost=135449.03..270898.05 rows=3559521 width=8)
+Filter: (NOT (hashed SubPlan 1))
+\end{minted}
+\subsection{Unsafe nodes: Hash Join}
+Hash Joins can use more memory than expected if there are many collisions on the hashed side:
+\begin{minted}{sql}
+postgres=# explain (analyze, costs off)
+postgres-# select * from t t1 join t t2 on t1.b = t2.b where t1.a = 1;
+QUERY PLAN
+--------------------------------------------------------------------------------------------
+Hash Join (actual time=873.321..4223.080 rows=1000000 loops=1)
+Hash Cond: (t2.b = t1.b)
+-> Seq Scan on t t2 (actual time=0.048..755.195 rows=10500000 loops=1)
+-> Hash (actual time=873.163..873.163 rows=500000 loops=1)
+Buckets: 131072 (originally 1024) Batches: 8 (originally 1) Memory Usage: 3465kB
+-> Seq Scan on t t1 (actual time=748.700..803.665 rows=500000 loops=1)
+Filter: (a = 1)
+Rows Removed by Filter: 10000000
+postgres=# explain (analyze, costs off)
+postgres-# select * from t t1 join t t2 on t1.b % 1 = t2.b where t1.a = 1;
+QUERY PLAN
+---------------------------------------------------------------------------------------------
+Hash Join (actual time=3542.413..3542.413 rows=0 loops=1)
+Hash Cond: (t2.b = (t1.b % 1))
+-> Seq Scan on t t2 (actual time=0.053..732.095 rows=10500000 loops=1)
+-> Hash (actual time=888.131..888.131 rows=500000 loops=1)
+Buckets: 131072 (originally 1024) Batches: 2 (originally 1) Memory Usage: 19532kB
+-> Seq Scan on t t1 (actual time=753.244..812.959 rows=500000 loops=1)
+Filter: (a = 1)
+Rows Removed by Filter: 10000000
+\end{minted}
+\section{Measuring RAM usage...}
+We have to look into /proc filesystem, namely /proc/pid/smaps
+/proc/7194/smaps comprises a few sections like below which is a private memory segment . . .
+\begin{minted}{sql}
+....
+0135f000-0a0bf000 rw-p 00000000 00:00 0
+[heap]
+Size: 144768 kB
+Rss: 136180 kB
+Pss: 136180 kB
+Shared_Clean: 0 kB
+Shared_Dirty: 0 kB
+Private_Clean: 0 kB
+Private_Dirty: 136180 kB
+Referenced: 114936 kB
+Anonymous: 136180 kB
+AnonHugePages: 2048 kB
+Swap: 0 kB
+KernelPageSize: 4 kB
+MMUPageSize: 4 kB
+Locked: 0 kB
+VmFlags: rd wr mr mw me ac sd
+....
+\end{minted}
+or like shared buffers as below:
+\begin{minted}{sql}
+....
+7f8ce656a000-7f8cef300000 rw-s 00000000 00:04 7334558
+/dev/zero (deleted)
+Size: 144984 kB
+Rss: 75068 kB
+Pss: 38025 kB
+Shared_Clean: 0 kB
+Shared_Dirty: 73632 kB
+Private_Clean: 0 kB
+Private_Dirty: 1436 kB
+Referenced: 75068 kB
+Anonymous: 0 kB
+AnonHugePages: 0 kB
+Swap: 0 kB
+KernelPageSize: 4 kB
+MMUPageSize: 4 kB
+Locked: 0 kB
+VmFlags: rd wr sh mr mw me ms sd
+....
+\end{minted}
+\begin{table}
+	\centering
+	\begin{tabular}{c | p{2cm} | p{10cm}}
+		Acronym & Full form & Description
+		\\ \hline
+		PSS & proportional set size & 
+		\begin{itemize}
+			\item For each private allocated memory chunk we count its size as is
+			\item We divide the size of a shared memory chunk by the number of processes that use it
+			\item $\sum_{pid}PSS(pid) =$ total memory used
+			\item We can get the size of private memory of a process this way:
+		\end{itemize}
+		\\ \hline
+		Private & & we need to count only private memory used by a backend or a worker, as all the shared is allocated by postmaster on startup.
+			\begin{minted}[fontsize=\footnotesize]{sh}
+$ grep '^Private' /proc/7194/smaps|awk '{a+=$2}END{print a*1024}'
+7852032
+			\end{minted}
+		Private from psql
+			\begin{minted}[breaklines=no, bgcolor=white]{sh}
+do $do$ declare
+l_command text :=
+$p$ cat /proc/$p$ || pg_backend_pid() || $p$/smaps $p$ ||
+$p$ | grep '^Private' $p$ ||
+$p$ | awk '{a+=$2}END{print a * 1024}' $p$;
+begin
+create temp table if not exists z (a int);
+execute 'copy z from program ' || quote_literal(l_command);
+raise notice '%', (select pg_size_pretty(sum(a)) from z);
+truncate z;
+end;
+$do$;
+			\end{minted}
+	\end{tabular}
+\end{table}
 %----------------------------------------------------------------------------------------
 %\end{multicols}
 \end{document}

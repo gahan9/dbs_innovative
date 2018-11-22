@@ -107,6 +107,76 @@ The merits and demerits of below listed indexes are compared:
 		\end{itemize}
 \end{itemize}
 
+\subsection{Need for Index}
+All the queries on the database are not always simpler and as a growing size of data and requirements of analytics on it various type of queries needs to be executed. Time taken by such queries to execute grows with the size of data and hence it is necessity to optimize it.
+
+To optimize such query first we need to determine trade off between various indexes which are used in modern database and conclude a feature matrix describing which index is suitable for which type of query.
+
+\section{Spatial search problems}
+Spatial data has two primary query types: 
+\begin{itemize}
+	\item nearest neighbors 
+	\item range queries
+\end{itemize}
+
+\subsection{K-Nearest Neighbor}
+\paragraph{Problem Statement:} Given millions of points, such as locations of city or area, how do we determine the closest points to a given query point?
+\begin{figure}
+	\centering
+	\includegraphics[width=350px]{assets/KnearestNeighbour}
+	\caption{three nearest neighbors (points marked with green) of point (marked with red)}
+\end{figure}
+
+\subsection{Range and radius queries}
+\paragraph{Problem Statement:} How do we retrieve all points inside a rectangle (range query) or circle (radius query) or any polygon.
+\begin{figure}
+	\centering
+	\includegraphics[width=350px]{assets/rangeAndRadius}
+	\caption{three nearest neighbors (points marked with green) of point (marked with red)}
+\end{figure}
+
+\subsection{Solution - spatial trees}
+\begin{itemize}
+	\item Data changes are usually much less frequent than queries, so incurring an initial cost of processing data into an index is a fair price to pay for instant searches afterwards.
+	\item Almost all spatial data structures share the same principle to enable efficient search: branch and bound. It means arranging data in a tree-like structure that allows discarding branches at once if they do not fit our search criteria.
+\end{itemize}
+
+\subsection{R-Tree}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=350px]{assets/rtree1}
+	\caption{sorted bunch of points in to rectangular boxes}
+	\includegraphics[width=350px]{assets/rtree2}
+	\includegraphics[width=350px]{assets/rtree3}
+	\caption{further sorted bunch of points in to rectangular boxes from each rectangular box}
+	\caption{R}
+\end{figure}
+\subsubsection{Trade off}
+	\begin{itemize}
+		\tick Quadtrees require fine-tuning by choosing appropriate tiling level in order to optimize performance. No specific tuning is required for R-Trees.
+		\tick It’s used by all modern spatial databases and many game engines. 
+		\tick R-trees are much faster than Quadtree for nearest neighbours queries.
+		\tick R-trees are much faster than Quadtree for nearest neighbours queries.
+		\fail Quadtree indexes are created faster than R-tree.
+		\fail Quadtree can be implemented on top of existing B-tree. R-Tree -cannot
+	\end{itemize}
+
+\subsection{kd tree}
+kd tree is similar to R-tree, but instead of sorting the points into several boxes at each tree level.
+We sort them into two halves (around a median point) either left and right, or top and bottom, alternating between x and y split on each level
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=350px]{assets/kd-tree}
+	\caption{first three levels of kd tree}
+	\caption{R}
+\end{figure}
+\begin{itemize}
+	\fail Compared to R-tree, K-d tree can usually only contain points (not rectangles), and doesn’t handle adding and removing points. 
+	\tick It’s much easier to implement, and it’s very fast.
+\end{itemize}
+
+
+
 %\setlength{\tabcolsep}{10pt} % Default value: 6pt
 \renewcommand{\arraystretch}{2} % Default value: 1
 \begin{table}[!ht]
@@ -138,6 +208,8 @@ The merits and demerits of below listed indexes are compared:
 	Splitting & Easy & Hard & N/A & N/A & N/A & N/A
 	\\ \hline 
 	Splitting Point & Distribute Data & N/A & N/A & any point that distribute data & centre point always & N/A
+	\\ \hline 
+	uniformly distributed data with a high change frequency &  &  &  &  & \good & \bad
 	\\ \hline
 	\end{tabular}
 \end{table}
